@@ -32,6 +32,7 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	"github.com/minio/minio/pkg/disk"
+	"github.com/minio/minio/pkg/ellipses"
 	"github.com/minio/minio/pkg/env"
 	xioutil "github.com/minio/minio/pkg/ioutil"
 	"gonum.org/v1/gonum/stat"
@@ -150,7 +151,7 @@ func concurrentWrite(obj int, drives []string, fileSize int64, nfiles int, total
 				log.Fatal(err)
 			}
 			d := time.Since(t)
-			if d > time.Second {
+			if d > time.Second && debug {
 				fmt.Printf("object %s took more than a second to write\n", humanize.Ordinal(i+1))
 			}
 			totalIntervals[i] = float64(d)
@@ -159,9 +160,31 @@ func concurrentWrite(obj int, drives []string, fileSize int64, nfiles int, total
 	wg.Wait()
 }
 
+// parseDrives will parse the drive parameter given.
+func parseDrives(h string) []string {
+	drives := strings.Split(h, ",")
+	dst := make([]string, 0, len(drives))
+	for _, drive := range drives {
+		if !ellipses.HasEllipses(drive) {
+			dst = append(dst, drive)
+			continue
+		}
+		patterns, err := ellipses.FindEllipsesPatterns(drive)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, p := range patterns {
+			dst = append(dst, p.Expand()...)
+		}
+	}
+	return dst
+}
+
 func main() {
-	drives := strings.Split(env.Get("DRIVES",
-		"/mnt/drive0,/mnt/drive1,/mnt/drive2,/mnt/drive3,/mnt/drive4,/mnt/drive5,/mnt/drive6,/mnt/drive7,/mnt/drive8,/mnt/drive9,/mnt/drive10,/mnt/drive11"), ",")
+	drives := parseDrives(env.Get("DRIVES", ""))
+	if len(drives) == 0 {
+		log.Fatal("DRIVES is a mandatory env option")
+	}
 	concurrency, err := strconv.Atoi(env.Get("CONCURRENT", "100"))
 	if err != nil {
 		log.Fatal(err)
