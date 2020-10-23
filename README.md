@@ -8,7 +8,7 @@ export DRIVES=/mnt/data{1...12}
 export CONCURRENT=1200
 export FILESIZE=128KiB
 export NFILES=48M
-./fio
+./fio++
 ```
 
 
