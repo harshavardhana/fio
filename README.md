@@ -1,6 +1,6 @@
 # Disk latency benchmarking tool
 
-Here is an example of how to start this tool by taking `DRIVES` to benchmark, at specified `CONCURRENT` level divided across drives, with total of `NFILES` created across drives as well. In the following example we have used `12` drives with `1200` concurrent requests across drives by creating a total of 4million objects per drive. Optionally you can also specify the file size you are interested in using `FILESIZE` env.
+Here is an example of how to start this tool by taking `DRIVES` to benchmark, at specified `CONCURRENT` level divided across drives, with a total of `NFILES` created across drives as well. In the following example we have used `12` drives with `1200` concurrent requests across drives by creating a total of 4million objects per drive. Optionally you can also specify the file size you are interested in using `FILESIZE` env.
 
 ```
 ulimit -n 65535
@@ -42,4 +42,4 @@ object 369th took more than a second to write
 ```
 
 
-NOTE: this tool doesn't arbitarily slow itself down upon latency changes, it keeps going at full throttle until all writes are complete.
+NOTE: this tool does not arbitrarily slow itself down upon latency changes, it keeps going at full throttle until all writes are complete.
