@@ -95,21 +95,27 @@ func (r *nullReader) Read(b []byte) (int, error) {
 var debug = env.Get("DEBUG", "off") == "on"
 
 // CreateFile - creates the file.
-func write(obj int, drives []string, fileSize int64) error {
+func write(obj int, drives []string, fileSize int64, tree bool) (time.Duration, error) {
 	var nBuf [32]byte
 	randASCIIBytes(nBuf[:])
 
 	rv := rand.New(rand.NewSource(time.Now().UnixNano())).Intn
-	name := filepath.Join(drives[rv(len(drives))], fmt.Sprintf("%d.%s", obj, string(nBuf[:])))
-	if debug {
-		fmt.Println("writing to", name)
+	var name string
+	if tree {
+		name = filepath.Join(drives[rv(len(drives))], fmt.Sprintf("%d/%s", obj, string(nBuf[:])))
+	} else {
+		name = filepath.Join(drives[rv(len(drives))], fmt.Sprintf("%d.%s", obj, string(nBuf[:])))
 	}
+
+	t := time.Now()
+
 	if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
-		return err
+		return 0, err
 	}
+
 	w, err := disk.OpenFileDirectIO(name, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if fileSize > 0 {
@@ -117,7 +123,7 @@ func write(obj int, drives []string, fileSize int64) error {
 		err = Fallocate(int(w.Fd()), 0, fileSize)
 	}
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	defer func() {
@@ -130,29 +136,30 @@ func write(obj int, drives []string, fileSize int64) error {
 
 	written, err := xioutil.CopyAligned(w, io.LimitReader(&nullReader{}, fileSize), *bufp, fileSize)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if written != fileSize {
-		return fmt.Errorf("unexpected file size written expected %d, got %d", fileSize, written)
+		return 0, fmt.Errorf("unexpected file size written expected %d, got %d", fileSize, written)
 	}
 
-	return nil
+	d := time.Since(t)
+	if d > time.Second && debug {
+		fmt.Printf("object %s took more than a second to write\n", name)
+	}
+
+	return d, nil
 }
 
-func concurrentWrite(obj int, drives []string, fileSize int64, nfiles int, totalIntervals []float64) {
+func concurrentWrite(obj int, drives []string, fileSize int64, nfiles int, totalIntervals []float64, tree bool) {
 	var wg sync.WaitGroup
 	wg.Add(int(nfiles))
 	for i := 0; i < int(nfiles); i++ {
 		go func(i int) {
 			defer wg.Done()
-			t := time.Now()
-			if err := write(obj+i, drives, fileSize); err != nil {
+			d, err := write(obj+i, drives, fileSize, tree)
+			if err != nil {
 				log.Fatal(err)
-			}
-			d := time.Since(t)
-			if d > time.Second && debug {
-				fmt.Printf("object %s took more than a second to write\n", humanize.Ordinal(i+1))
 			}
 			totalIntervals[i] = float64(d)
 		}(i)
@@ -199,14 +206,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tree, err := strconv.ParseBool(env.Get("TREE", "off"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var totalIntervals = make([]float64, nfiles)
 
 	if int(nfiles) < concurrency {
-		concurrentWrite(0, drives, int64(fileSize), int(nfiles), totalIntervals[:int(nfiles)])
+		concurrentWrite(0, drives, int64(fileSize), int(nfiles), totalIntervals[:int(nfiles)], tree)
 	} else {
 		var i int
 		for i < int(nfiles) {
-			concurrentWrite(i, drives, int64(fileSize), concurrency, totalIntervals[i:i+concurrency])
+			concurrentWrite(i, drives, int64(fileSize), concurrency, totalIntervals[i:i+concurrency], tree)
 			i = i + concurrency
 		}
 	}
