@@ -1,3 +1,5 @@
+// +build fio
+
 /*
  * MinIO Cloud Storage, (C) 2020 MinIO, Inc.
  *
@@ -155,6 +157,7 @@ func concurrentWrite(obj int, drives []string, fileSize int64, nfiles int, total
 	var wg sync.WaitGroup
 	wg.Add(int(nfiles))
 	for i := 0; i < int(nfiles); i++ {
+		i := i
 		go func(i int) {
 			defer wg.Done()
 			d, err := write(obj+i, drives, fileSize, tree)
