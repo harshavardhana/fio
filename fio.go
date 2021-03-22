@@ -146,8 +146,8 @@ func write(obj int, drives []string, fileSize int64, tree bool) (time.Duration, 
 	}
 
 	d := time.Since(t)
-	if d > time.Second && debug {
-		fmt.Printf("object %s took more than a second to write\n", name)
+	if d > time.Second/4 && debug {
+		fmt.Printf("object %s took more than a 1/4th of a second to write: %s\n", name, d)
 	}
 
 	return d, nil
@@ -195,21 +195,21 @@ func main() {
 	if len(drives) == 0 {
 		log.Fatal("DRIVES is a mandatory env option")
 	}
-	concurrency, err := strconv.Atoi(env.Get("CONCURRENT", "100"))
+	concurrency, err := strconv.Atoi(env.Get("CONCURRENT", "96"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	fileSize, err := humanize.ParseBytes(env.Get("FILESIZE", "128KiB"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	nfiles, err := humanize.ParseBytes(env.Get("NFILES", "8M"))
+	fileSize, err := humanize.ParseBytes(env.Get("FILESIZE", "12KiB"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tree, err := strconv.ParseBool(env.Get("TREE", "off"))
+	nfiles, err := humanize.ParseBytes(env.Get("NFILES", "48M"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tree, err := strconv.ParseBool(env.Get("TREE", "true"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -4,9 +4,9 @@ Here is an example of how to start this tool by taking `DRIVES` to benchmark, at
 
 ```
 ulimit -n 65535
-export DRIVES=/mnt/data{1...12}
-export CONCURRENT=1200
-export FILESIZE=128KiB
+export DRIVES=/mnt/drive{1...12}/fio-test
+export CONCURRENT=96
+export FILESIZE=12KiB
 export NFILES=48M
 ./fio++
 ```
@@ -24,21 +24,21 @@ Slowest time taken 1.085103551s
 With `DEBUG=on` you can see some collection of objects which slowed down in addition to latency values
 
 ```
-object 312th took more than a second to write
-object 483rd took more than a second to write
-object 582nd took more than a second to write
-object 255th took more than a second to write
-object 737th took more than a second to write
-object 769th took more than a second to write
-object 320th took more than a second to write
-object 760th took more than a second to write
-object 994th took more than a second to write
-object 932nd took more than a second to write
-object 327th took more than a second to write
-object 765th took more than a second to write
-object 386th took more than a second to write
-object 796th took more than a second to write
-object 369th took more than a second to write
+object 312th took more than a 1/4th of a second to write
+object 483rd took more than a 1/4th of a second to write
+object 582nd took more than a 1/4th of a second to write
+object 255th took more than a 1/4th of a second to write
+object 737th took more than a 1/4th of a second to write
+object 769th took more than a 1/4th of a second to write
+object 320th took more than a 1/4th of a second to write
+object 760th took more than a 1/4th of a second to write
+object 994th took more than a 1/4th of a second to write
+object 932nd took more than a 1/4th of a second to write
+object 327th took more than a 1/4th of a second to write
+object 765th took more than a 1/4th of a second to write
+object 386th took more than a 1/4th of a second to write
+object 796th took more than a 1/4th of a second to write
+object 369th took more than a 1/4th of a second to write
 ```
 
 
